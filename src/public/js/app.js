@@ -1,17 +1,36 @@
 // FE
+const messageList = document.querySelector("ul");
+const nickForm = document.querySelector("#nick");
+const messageForm = document.querySelector("#message");
 const socket = new WebSocket(`ws://${window.location.host}`);
-socket.addEventListener("open", () => {
-    console.log("Connected to Browser V");
-})
+function makeMessage(type, payload) {
+  const msg = { type, payload };
+  return JSON.stringify(msg);
+}
+function handleOpen() {
+  console.log("Connected to Server V");
+}
+socket.addEventListener("open", handleOpen);
 socket.addEventListener("message", (message) => {
-    console.log("New Message: ", message.data);
-})
-
+  const li = document.createElement("li");
+  li.innerText = message.data;
+  messageList.append(li);
+});
 socket.addEventListener("close", () => {
-    console.log("Disconnected from the Server X");
-})
+  console.log("Disconnected from Server X");
+});
+function handleSubmit(event) {
+  event.preventDefault();
+  const input = messageForm.querySelector("input");
+  socket.send(makeMessage("new_message", input.value));
+  input.value = "";
+}
+function handleNickSubmit(event) {
+  event.preventDefault();
+  const input = nickForm.querySelector("input");
+  socket.send(makeMessage("nickname", input.value));
+  input.value = "";
+}
 
-// 전송할 데이터를 문자열로 변환하여 전송하는 코드
-setTimeout(() => {
-    socket.send("Hello from the browser!");
-}, 10000);
+messageForm.addEventListener("submit", handleSubmit);
+nickForm.addEventListener("submit", handleNickSubmit);

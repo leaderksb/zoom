@@ -22,21 +22,30 @@ const server = http.createServer(app);
 // HTTP Server 위에 WebSocket Server를 만듦
 const wss = new WebSocket.Server({ server });
 
+function onSocketClose() {
+    console.log("Disconnected from the Browser X");
+}
+
+const sockets = [];
+
 // socket 변수에는 클라이언트와의 WebSocket 연결에 대한 정보가 담김
 wss.on("connection", (socket) => {
-    // console.log(socket);
+    sockets.push(socket);
+    socket["nickname"] = "Anon";
     console.log("Connected to Browser V");
-    socket.on("close", () => {
-        console.log("Disconnected from the Browser X");
+    socket.on("close", onSocketClose);
+    socket.on("message", (msg) => {
+      const message = JSON.parse(msg);
+      switch (message.type) {
+        case "new_message":
+          sockets.forEach((aSocket) =>
+            aSocket.send(`${socket.nickname}: ${message.payload}`)
+          );
+        case "nickname":
+          socket["nickname"] = message.payload;
+      }
     });
-    // 수신된 데이터를 버퍼에서 문자열로 변환하여 출력하는 코드
-    socket.on("message", (message) => {
-        const decodedMessage = message.toString(); // 버퍼를 문자열로 변환
-        console.log(decodedMessage);
-    });
-    socket.send("Hello!");
-    socket.send("Good!");
-});
-
-// PORT 3000번에서 HTTP, WS 2개의 프로토콜 처리 가능
-server.listen(3000, handleListen);
+  });
+  
+  // PORT 3000번에서 HTTP, WS 2개의 프로토콜 처리 가능
+  server.listen(3000, handleListen);
