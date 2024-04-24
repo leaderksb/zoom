@@ -1,6 +1,6 @@
 // BE
 import http from "http";
-import WebSocket from "ws";
+import SocketIO from "socket.io";
 import express from "express";
 
 const app = express();
@@ -18,7 +18,30 @@ app.get("/*", (req, res) => res.redirect("/"));
 // / URL 접근 시 home 뷰를 랜더링
 const handleListen = () => console.log(`Listening on http://localhost:3000`);
 
-const server = http.createServer(app);
+const httpServer = http.createServer(app);
+const wsServer = SocketIO(httpServer);
+
+wsServer.on("connection", (socket) => {
+    socket.onAny((event) => {
+        console.log(`Socket Event: ${event}`);
+    });
+    socket.on("enter_room", (roomName, done) => {
+        console.log(socket.id);
+        // Socket이 어떤 방에 접속했는지 조회
+        console.log(socket.rooms);
+        console.log(roomName);
+        // SocketIO가 기본적으로 제공하는 Room
+        socket.join(roomName);
+        done();
+        // roomName 방에 있는 모든 사람들한테 Welcome을 전송
+        socket.to(roomName).emit("welcome");
+        // setTimeout(() => {
+        //     done("Hello from the backend");
+        // }, 15000);
+    });
+});
+
+/* WebSocket
 // HTTP Server 위에 WebSocket Server를 만듦
 const wss = new WebSocket.Server({ server });
 
@@ -46,6 +69,7 @@ wss.on("connection", (socket) => {
       }
     });
   });
+  */
   
-  // PORT 3000번에서 HTTP, WS 2개의 프로토콜 처리 가능
-  server.listen(3000, handleListen);
+// PORT 3000번에서 HTTP, WS 2개의 프로토콜 처리 가능
+httpServer.listen(3000, handleListen);
